@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carrot Memory Game</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;font-family:Arial, sans-serif;background:linear-gradient(#aee8ff,#eaf9d7);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#333}.game{width:min(980px,96vw);padding:18px;text-align:center}.title{font-size:clamp(26px,5vw,48px);margin:0 0 8px;color:#2f7d32}.subtitle{font-size:clamp(16px,3vw,24px);margin:0 0 14px}.info{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:14px}.badge{background:white;border-radius:20px;padding:10px 18px;box-shadow:0 4px 10px #0002;font-weight:bold}.reset{border:0;border-radius:20px;background:#ff8c1a;color:white;padding:10px 20px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px #0002}.garden{background:#b9834b;border:8px solid #8b5a2b;border-radius:22px;padding:18px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;box-shadow:0 10px 20px #0003}.hole{height:135px;background:#7b4a24;border-radius:50%;position:relative;overflow:hidden;cursor:pointer;box-shadow:inset 0 8px 10px #0005}.carrot{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:86px;height:122px;transition:.25s ease}.leaf{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:42px;line-height:1;z-index:2}.body{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:58px;height:92px;background:#ff7a1a;border:4px solid #333;border-radius:50% 50% 60% 60%;clip-path:polygon(15% 0,85% 0,65% 100%,35% 100%);box-shadow:inset -6px 0 #e45b10}.body:before,.body:after{content:"";position:absolute;left:12px;width:25px;border-top:3px solid #7a2b12}.body:before{top:30px;transform:rotate(-15deg)}.body:after{top:55px;transform:rotate(12deg)}.num{position:absolute;top:38px;left:50%;transform:translateX(-50%);background:white;border-radius:50%;width:36px;height:36px;display:none;align-items:center;justify-content:center;font-size:22px;font-weight:bold;border:2px solid #ddd;z-index:3}.hole.open .carrot{bottom:18px}.hole.open .num{display:flex}.hole.matched{visibility:hidden}.message{font-size:clamp(20px,4vw,34px);font-weight:bold;min-height:45px;margin-top:16px;color:#d35400}.win{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:20px}.winBox{background:white;border-radius:28px;padding:30px;max-width:520px;text-align:center;box-shadow:0 20px 40px #0005}.winBox h2{font-size:44px;margin:0 0 10px;color:#2f7d32}.winBox p{font-size:22px}.winBox button{border:0;background:#2f7d32;color:white;border-radius:20px;padding:12px 24px;font-size:18px;font-weight:bold;cursor:pointer}@media(max-width:650px){.garden{grid-template-columns:repeat(4,1fr);gap:10px;padding:12px}.hole{height:110px}.carrot{width:70px;height:100px}.body{width:48px;height:76px}.leaf{font-size:34px}.num{top:32px;width:30px;height:30px;font-size:18px}}
+</style>
+</head>
+<body>
+  <main class="game">
+    <h1 class="title">🥕 Carrot Memory Game</h1>
+    <p class="subtitle">Find the matching numbers</p>
+    <div class="info">
+      <div class="badge">Moves: <span id="moves">0</span></div>
+      <div class="badge">Pairs: <span id="pairs">0</span>/10</div>
+      <button class="reset" onclick="newGame()">Restart</button>
+    </div>
+    <section id="garden" class="garden"></section>
+    <div id="message" class="message">Pick two carrots!</div>
+  </main>
+  <div id="win" class="win"><div class="winBox"><h2>Great job! ⭐</h2><p>You found all the carrots!</p><button onclick="newGame()">Play again</button></div></div>
+<script>
+const garden=document.getElementById('garden'),movesEl=document.getElementById('moves'),pairsEl=document.getElementById('pairs'),msg=document.getElementById('message'),win=document.getElementById('win');
+let first=null,second=null,locked=false,moves=0,pairs=0;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function newGame(){first=second=null;locked=false;moves=0;pairs=0;movesEl.textContent=0;pairsEl.textContent=0;msg.textContent='Pick two carrots!';win.style.display='none';garden.innerHTML='';const nums=shuffle([...Array(10)].flatMap((_,i)=>[i+1,i+1]));nums.forEach((n,i)=>{const hole=document.createElement('button');hole.className='hole';hole.dataset.num=n;hole.dataset.index=i;hole.innerHTML=`<div class="carrot"><div class="leaf">🌿</div><div class="body"><div class="num">${n}</div></div></div>`;hole.onclick=()=>pick(hole);garden.appendChild(hole)})}
+function pick(hole){if(locked||hole.classList.contains('open')||hole.classList.contains('matched'))return;hole.classList.add('open');if(!first){first=hole;msg.textContent='Now find the same number!';return}second=hole;moves++;movesEl.textContent=moves;locked=true;if(first.dataset.num===second.dataset.num){msg.textContent='Correct! 🎉';pairs++;pairsEl.textContent=pairs;setTimeout(()=>{first.classList.add('matched');second.classList.add('matched');resetPick();if(pairs===10)win.style.display='flex'},600)}else{msg.textContent='Try again!';setTimeout(()=>{first.classList.remove('open');second.classList.remove('open');resetPick()},900)}}
+function resetPick(){first=null;second=null;locked=false;if(pairs<10)msg.textContent='Pick two carrots!'}
+newGame();
+</script>
+</body>
+</html>
