@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carrot Memory Game</title>
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, Tahoma, sans-serif;
+      background:linear-gradient(#bdefff 0%, #dff8ff 45%, #8fd16a 45%, #79bd58 100%);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow-x:hidden;
+    }
+    .game{
+      width:min(1100px,96vw);
+      min-height:92vh;
+      text-align:center;
+      padding:18px;
+      position:relative;
+    }
+    h1{margin:8px 0 6px;color:#246b2d;font-size:clamp(26px,4vw,48px)}
+    .topbar{
+      display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:14px
+    }
+    .pill{
+      background:#fff;border:3px solid #3c9b4c;border-radius:30px;padding:8px 18px;
+      font-weight:bold;font-size:clamp(16px,2.5vw,22px);box-shadow:0 4px 0 rgba(0,0,0,.12)
+    }
+    button{
+      cursor:pointer;border:0;border-radius:24px;padding:11px 20px;font-size:18px;font-weight:bold;
+      background:#ffb43d;color:#5d3100;box-shadow:0 5px 0 #d88300
+    }
+    button:active{transform:translateY(3px);box-shadow:0 2px 0 #d88300}
+    .field{
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:repeat(5, minmax(72px, 1fr));
+      gap:18px 14px;
+      max-width:900px;
+      padding:20px 10px 30px;
+      direction:ltr;
+    }
+    .hole{
+      position:relative;height:150px;display:flex;align-items:flex-end;justify-content:center;
+      user-select:none; -webkit-tap-highlight-color:transparent;
+    }
+    .soil{
+      position:absolute;bottom:0;width:105px;height:34px;background:#6b3f21;border-radius:50%;
+      box-shadow: inset 0 -8px 0 rgba(0,0,0,.13), 0 6px 8px rgba(0,0,0,.2);
+    }
+    .card{
+      position:absolute;bottom:13px;width:82px;height:112px;cursor:pointer;transition:transform .24s ease, opacity .35s ease;
+      transform-origin:bottom center;
+    }
+    .card:hover{transform:translateY(-5px)}
+    .carrot{
+      position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+      width:62px;height:92px;background:#f47c20;border-radius:50% 50% 45% 45%;
+      clip-path:polygon(18% 0,82% 0,65% 100%,35% 100%);
+      box-shadow: inset -8px -5px 0 rgba(0,0,0,.12);
+    }
+    .leaf{position:absolute;left:50%;bottom:83px;transform:translateX(-50%);width:76px;height:42px}
+    .leaf span{position:absolute;bottom:0;width:20px;height:48px;background:#2da84a;border-radius:60% 60% 20% 20%;transform-origin:bottom center}
+    .leaf span:nth-child(1){left:8px;transform:rotate(-35deg)}
+    .leaf span:nth-child(2){left:28px;height:55px;transform:rotate(0)}
+    .leaf span:nth-child(3){left:48px;transform:rotate(35deg)}
+    .num{
+      position:absolute;left:50%;bottom:42px;transform:translateX(-50%) scale(0);
+      width:62px;height:62px;background:#fff;border:4px solid #f47c20;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:#1c6b2b;
+      transition:transform .18s ease;z-index:3
+    }
+    .card.open .carrot,.card.matched .carrot{opacity:.18}
+    .card.open .leaf,.card.matched .leaf{opacity:.25}
+    .card.open .num,.card.matched .num{transform:translateX(-50%) scale(1)}
+    .card.matched{opacity:.25;pointer-events:none;transform:translateY(16px) scale(.85)}
+    .message{
+      min-height:42px;font-size:clamp(18px,2.6vw,28px);font-weight:bold;color:#1d6428;margin-top:3px
+    }
+    .win{
+      position:fixed;inset:0;background:rgba(255,255,255,.75);display:none;align-items:center;justify-content:center;z-index:10;
+    }
+    .winbox{background:#fff;border:5px solid #3c9b4c;border-radius:30px;padding:35px;max-width:90vw;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .winbox h2{font-size:48px;margin:0 0 10px;color:#2a8c3d}.stars{font-size:52px}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+    .wrong{animation:shake .25s linear 2}
+    @media(max-width:650px){.field{grid-template-columns:repeat(4,1fr);gap:8px}.hole{height:125px}.soil{width:82px}.card{width:68px;height:98px}.carrot{width:52px;height:78px}.leaf{bottom:70px;transform:translateX(-50%) scale(.82)}.num{width:52px;height:52px;font-size:28px;bottom:35px}}
+  </style>
+</head>
+<body>
+  <main class="game">
+    <h1>Find the Matching Carrots</h1>
+    <div class="topbar">
+      <div class="pill">Moves: <span id="moves">0</span></div>
+      <div class="pill">Pairs: <span id="pairs">0</span>/10</div>
+      <button onclick="startGame()">Restart</button>
+    </div>
+    <div class="message" id="message">Tap two carrots with the same number</div>
+    <section class="field" id="field"></section>
+  </main>
+
+  <div class="win" id="win">
+    <div class="winbox">
+      <div class="stars">⭐ ⭐ ⭐</div>
+      <h2>Well done!</h2>
+      <p style="font-size:24px;margin:8px 0 20px">You matched all the carrots.</p>
+      <button onclick="startGame()">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const field = document.getElementById('field');
+    const movesEl = document.getElementById('moves');
+    const pairsEl = document.getElementById('pairs');
+    const msg = document.getElementById('message');
+    const win = document.getElementById('win');
+    let first = null, second = null, lock = false, moves = 0, pairs = 0;
+
+    function shuffle(arr){
+      for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+      return arr;
+    }
+    function carrotHTML(value, index){
+      return `<div class="hole"><div class="soil"></div><div class="card" data-value="${value}" data-index="${index}" onclick="pick(this)"><div class="leaf"><span></span><span></span><span></span></div><div class="carrot"></div><div class="num">${value}</div></div></div>`;
+    }
+    function startGame(){
+      const values = shuffle([...Array(10).keys()].map(n=>n+1).flatMap(n=>[n,n]));
+      field.innerHTML = values.map(carrotHTML).join('');
+      first = second = null; lock = false; moves = 0; pairs = 0;
+      movesEl.textContent = moves; pairsEl.textContent = pairs;
+      msg.textContent = 'Tap two carrots with the same number';
+      win.style.display = 'none';
+    }
+    function pick(card){
+      if(lock || card.classList.contains('open') || card.classList.contains('matched')) return;
+      card.classList.add('open');
+      if(!first){ first = card; msg.textContent = 'Now find the matching carrot'; return; }
+      second = card; moves++; movesEl.textContent = moves; lock = true;
+      if(first.dataset.value === second.dataset.value){
+        setTimeout(()=>{
+          first.classList.add('matched'); second.classList.add('matched');
+          first.classList.remove('open'); second.classList.remove('open');
+          pairs++; pairsEl.textContent = pairs;
+          msg.textContent = 'Great job!';
+          first = second = null; lock = false;
+          if(pairs === 10) setTimeout(()=>win.style.display='flex', 350);
+        }, 500);
+      } else {
+        first.classList.add('wrong'); second.classList.add('wrong');
+        msg.textContent = 'Try again';
+        setTimeout(()=>{
+          first.classList.remove('open','wrong'); second.classList.remove('open','wrong');
+          first = second = null; lock = false;
+          msg.textContent = 'Tap two carrots with the same number';
+        }, 950);
+      }
+    }
+    startGame();
+  </script>
+</body>
+</html>
